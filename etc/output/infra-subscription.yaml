@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: infra-group
+  namespace: infra
+spec:
+  targetNamespaces:
+  - infra
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: infra-catalogsource
+  namespace: infra
+spec:
+  sourceType: grpc
+  image: public.ecr.aws/fbconvservice/infra-bundle-index:1.5.0
+  updateStrategy:
+    registryPoll:
+      interval: 45m
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: infra-subscription
+  namespace: infra
+spec:
+  channel: alpha
+  name: infra-operator
+  source: infra-catalogsource
+  sourceNamespace: infra
+  installPlanApproval: Automatic

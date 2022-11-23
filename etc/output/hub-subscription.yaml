@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloudbridge
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: cloudbridge-group
+  namespace: cloudbridge
+spec:
+  targetNamespaces:
+  - cloudbridge
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: hub-catalogsource
+  namespace: cloudbridge
+spec:
+  sourceType: grpc
+  image: public.ecr.aws/fbconvservice/hub-bundle-index:1.5.0
+  updateStrategy:
+    registryPoll:
+      interval: 45m
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: hub-subscription
+  namespace: cloudbridge
+spec:
+  channel: alpha
+  name: hub-operator
+  source: hub-catalogsource
+  sourceNamespace: cloudbridge
+  installPlanApproval: Automatic

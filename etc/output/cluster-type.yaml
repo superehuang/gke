@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-type
+  namespace: default
+data:
+  cluster-type: gkepoc

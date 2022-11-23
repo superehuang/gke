@@ -1,0 +1,156 @@
+apiVersion: cloudbridge.business.facebook.com/v1alpha1
+kind: CBInfra
+metadata:
+  name: infra
+spec:
+  adminEmail: {admin_email}
+  adminPassword: {admin_password}
+  cloudbridgeDomainName: {domain_name}
+  corsAllowedDomains: {cors_allowed_domains}
+  businessId: {business_id}
+  pixelId: {pixel_id}
+  accessToken: {access_token}
+  passwordHash: {password_hash}
+  apiVersion: {api_version}
+  activeTelemetryConsent: {telemetry_consent}
+
+  mariadb:
+    enabled: {mariadb_enabled}
+    auth:
+      host: infra-mariadb-primary.default.svc.cluster.local
+    architecture: replication
+    primary:
+      extraFlags: "--max_connections=500"
+      podAnnotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+      livenessProbe:
+        enabled: "true"
+        initialDelaySeconds: 10
+        periodSeconds: 60
+        timeoutSeconds: 5
+        failureThreshold: 60
+      readinessProbe:
+        enabled: "true"
+        initialDelaySeconds: 10
+        periodSeconds: 60
+        timeoutSeconds: 5
+        failureThreshold: 90
+    secondary:
+      podAnnotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+      podAntiAffinityPreset: hard
+      replicaCount: 2
+      livenessProbe:
+        enabled: "true"
+        initialDelaySeconds: 10
+        periodSeconds: 120
+        timeoutSeconds: 5
+        failureThreshold: 10
+      readinessProbe:
+        enabled: "true"
+        initialDelaySeconds: 10
+        periodSeconds: 120
+        timeoutSeconds: 5
+        failureThreshold: 10
+
+  keycloak:
+    enabled: true
+    rbac:
+      create: true
+    livenessProbe: |
+      httpGet:
+        path: "/auth/"
+        port: http
+      initialDelaySeconds: 30
+      timeoutSeconds: 5
+      periodSeconds: 60
+      failureThreshold: 30
+    readinessProbe: |
+      httpGet:
+        path: "/auth/realms/master"
+        port: http
+      initialDelaySeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 60
+      periodSeconds: 30
+    startupProbe: |
+      httpGet:
+        path: "/auth/"
+        port: http
+      initialDelaySeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 60
+      periodSeconds: 3
+
+    extraEnv: |
+      - name: DB_VENDOR
+        value: mariadb
+      - name: DB_ADDR
+        value: "infra-mariadb-primary.default.svc.cluster.local"
+      - name: DB_PORT
+        value: "3306"
+      - name: DB_DATABASE
+        value: cloudbridge
+      - name: DB_USER_FILE
+        value: /secrets/db-creds/user
+      - name: DB_PASSWORD_FILE
+        value: /secrets/db-creds/password
+      - name: KEYCLOAK_USER_FILE
+        value: /secrets/admin-creds/user
+      - name: KEYCLOAK_PASSWORD_FILE
+        value: /secrets/admin-creds/password
+      - name: JAVA_OPTS
+        value: -Djava.net.preferIPv4Stack=false
+
+  simpleAuth:
+    secret: {app_secret}
+  metricsserver:
+    enabled: false
+  ingressnginx:
+    controller:
+      kind: DaemonSet
+      resources:
+        requests:
+          cpu: 200m
+      service:
+        type: LoadBalancer
+
+  fluentbit:
+    awsRegion: {aws_region}
+
+  telemetrylogger:
+    image:
+      repository: {registry}/telemetry-logger-container
+
+  updatefailsafe:
+    bucket: {s3_bucket}
+
+  hub:
+    installed: {hub_op_installed}
+    nameOverride: hub
+    operatorImage:
+      registry: {registry}
+      tag: {index_tag}
+
+    capig:
+      installed: {capig_op_installed}
+      nameOverride: capig
+      operatorImage:
+        registry: {registry}
+        tag: {index_tag}
+
+    multitenant:
+      enabled: {multitenant_enabled}
+      adminUsername: {admin_email}
+      adminPassword: {admin_password}
+
+    pl:
+      enabled: {pl_enabled}
+      installed: {pl_op_installed}
+      nameOverride: pl
+      operatorImage:
+        registry: {registry}
+        tag: {index_tag}
+    mariadb:
+      auth:
+        host: infra-mariadb-primary.default.svc.cluster.local

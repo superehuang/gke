@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: instance-id
+  namespace: default
+data:
+  instance-id: {instance_id}
